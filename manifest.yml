@@ -1,0 +1,5 @@
+applications:
+- name: stevenAppName
+  random-route: true
+  memory: 128M
+  command: node src/app.js
