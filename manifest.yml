@@ -1,5 +1,6 @@
 applications:
-- name: stevenAppName
-  random-route: true
+- name: standup-helper
+  routes:
+  - route: https://standup-helper.mybluemix.net
   memory: 128M
-  command: node src/app.js
+  command: npm start

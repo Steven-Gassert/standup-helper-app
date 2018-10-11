@@ -1,93 +1,50 @@
 const app = require('express')();
 const bodyParser = require('body-parser');
-const github = require('./github');
-const setupController = require('../controllers/setupController');
+//const setupController = require('../controllers/setupController');
 const mongoose = require('mongoose');
 const dbconfig = require('../dbconfig');
-const userConfig = require('../models/userConfig');
-
-// user configs will be stored in a mongoDB
-
-// server pseudo code
-// request recieved (at slack or github endpoint)
-//   if there is an entry for this username in config
-//      make appropriate request's to github.js
-//      format for output
-//      send back to webook for either slack or github
-
 const port = process.env.VCAP_APP_PORT || 3000;
-app.use(bodyParser.json({ type: 'application/json' }));
-mongoose.connect(dbconfig.dbConnectionString('dev'));
-setupController(app);
+const routes = require('./routes');
 
-app.get('/slack/:uid', function(req,res) {
-  let user_id = req.params.uid;
-  userConfig.find({ userId: user_id }, function(err, config) {
-    // parse out not found errors and init user config
-    if (err) res.send('there was an error retriving your config info');
-    else {
-      try{
-        // config will be an array of matching documents, put in error handeling if multiple docs returned for one id
-        config = config[0];
-        let response = '';
-        if (config.use_enterprise) {
-          let options = {
-            url: config.enterprise_url,
-            token: config.enterprise_token,
-            hours: config.hours,
-            username: config.enterprise_un,
-            issues: config.issues,
-            pull_requests: config.pull_requests,
-            commits: config.commits
-          };
-          github(options).getActivity()
-            .then(results => {
-              console.log('Enterprise Standup:');
-              console.log(JSON.stringify(results));
-              //sendToSlack(message);
-            })
-            .catch(error => {
-              console.log('Enterprise Standup:');
-              console.log('there was an error getting your Enterprise Standup');
-              console.log(error);
-              //sendToSlack(error);
-            });
-        }
+const cfenv = require('cfenv');
+const appEnv = cfenv.getAppEnv();
+let mongo_env = 'prod';
+if(appEnv.url.indexOf('local') > -1) { //if appEnv cannont find cfenv 'local', then we are running locally
+  //appEnv.url = undefined;
+  mongo_env = 'dev';
+}
 
-        if (config.use_public) {
-          let options = {
-            url: 'https://api.github.com',
-            token: config.public_token,
-            hours: config.hours,
-            username: config.public_un,
-            issues: config.issues,
-            pull_requests: config.pull_requests,
-            commits: config.commits
-          };
-          github(options).getActivity()
-            .then(results => {
-              console.log('Public Standup:');
-              console.log(JSON.stringify(results));
-              //sendToSlack(message);
-            })
-            .catch(error => {
-              console.log('Public Standup');
-              console.log(JSON.stringify(error));
-              //sendToSlack(error);
-            });
-        }
-        console.log(response);
-        res.send(response);
-      } catch(error) {
-        console.log(error);
-        res.send('there was an error getting your events');
-      }
-    }
-  });
-});
+app.use(bodyParser.urlencoded({ type: 'application/x-www-form-urlencoded' }));
+mongoose.connect(dbconfig.dbConnectionString(mongo_env));
+//setupController(app); // seed database
 
-app.get('/github', function(req,res) {
-  console.log('recieved request at github endpoint');
-});
+routes(app);
 
 app.listen(port);
+
+// Cases
+// - */slack should always send back a response, good or bad* whether there an uncaught error propegating up to this call, or an error during execution, or a success
+// - if use public we should always call github once with public visa versa
+// - if use both we should call both
+// - we should get output which mentions either one or both types
+
+//Cases /callback/github
+// - If there is an error trying to save user info you should get a response.
+// - If there is no error you should get a response.
+
+// Cases getToken
+// if public we should make the appropriate call
+// if there was an error we should return an error?
+
+// Cases saveToken
+// - if type is public we should try to save a public token
+// - if type is enterprise we should try to save an enterprise token
+// - if a user already exist's we should update a record
+// - if this is a new user we should create a new record
+// - if there is an error we should return an error
+// - if there was an error getting the username we should log this
+// - if there was an error saving to the db we should log this
+
+// Cases getUsername
+// if there is an error getting the username we should return an error
+// if there is no error we should return a username
