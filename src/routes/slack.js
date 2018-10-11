@@ -12,7 +12,6 @@ const bot_token = process.env.BOT_TOKEN;
 const appEnv = cfenv.getAppEnv();
 if(appEnv.url.indexOf('local') > -1) { //if appEnv cannont find cfenv 'local', then we are running locally
   appEnv.url = undefined;
-  //mongo_env = 'dev';
 }
 const host = appEnv.url || process.env.NGROK;
 let ent_host = 'ibm';
@@ -30,9 +29,9 @@ module.exports = function(app) {
         res.send('there was an error retriving your config info');
         console.log(err);
       } else if (config.length == 0) { // this User has never authorized standup-helper
-        console.log(`host = ${host}`);
         let gh_auth_enterprise = `https://github.${ent_host}.com/login/oauth/authorize?client_id=${client_id_enterprise}&redirect_uri=${host}/callback/github&scope=notifications&state=${response_url}also${user_id}alsoenterprise&allow_signup=true`;
         let gh_auth_public = `https://github.com/login/oauth/authorize?client_id=${client_id_pub}&redirect_uri=${host}/callback/github&scope=notifications&state=${response_url}also${user_id}alsopublic&allow_signup=true`;
+        res.send('Authorize Standup-Helper by following both links below');
         authMessage(req.body,gh_auth_public,gh_auth_enterprise);
       } else { // there is configuration info stored already for this user
         try { 
@@ -112,7 +111,6 @@ module.exports = function(app) {
 // maybe this should return the response we get from slack and we should handle it in /slack?
 function authMessage(body,gh_auth_public,gh_auth_enterprise) {
   axios.post(body.response_url,{
-    'text': 'Authorize Standup-helper to access both your public and enterprise Github accounts',
     'attachments': [
       {
         'fallback': 'Authorize Standup-helper to access both your public and enterprise Github accounts',
