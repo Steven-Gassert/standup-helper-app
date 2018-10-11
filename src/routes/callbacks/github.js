@@ -190,7 +190,6 @@ async function getUsername(endpoint, token) {
     let response = await axios.get(`${endpoint}/user`,{
       headers: {'Authorization': `token ${token}`}
     });
-    console.log(`In get usename, about to return ${response.data.login}`);
     return response.data.login;
   } catch(error) {
     console.log(`there was an error while attempting to retrieve a user info from the access token created: ${error}`);
