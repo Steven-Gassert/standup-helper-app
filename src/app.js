@@ -1,6 +1,5 @@
 const app = require('express')();
 const bodyParser = require('body-parser');
-//const setupController = require('../controllers/setupController');
 const mongoose = require('mongoose');
 const dbconfig = require('../dbconfig');
 const port = process.env.VCAP_APP_PORT || 3000;
@@ -10,7 +9,6 @@ const cfenv = require('cfenv');
 const appEnv = cfenv.getAppEnv();
 let mongo_env = 'prod';
 if(appEnv.url.indexOf('local') > -1) { //if appEnv cannont find cfenv 'local', then we are running locally
-  //appEnv.url = undefined;
   mongo_env = 'dev';
 }
 
